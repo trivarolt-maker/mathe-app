@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mathe Lern App</title>
+
+<style>
+  body {
+    margin: 0;
+    font-family: system-ui, Arial;
+    background: #f2f5ff;
+    display: flex;
+    justify-content: center;
+  }
+
+  .app {
+    width: 420px;
+    background: white;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #58cc02, #43a047);
+    color: white;
+    padding: 18px;
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  .progress {
+    height: 8px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 10px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: white;
+    width: 0%;
+  }
+
+  /* BADGES */
+  .badges {
+    padding: 10px;
+    font-size: 13px;
+    color: #444;
+  }
+
+  .badge {
+    display: inline-block;
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 5px 10px;
+    border-radius: 20px;
+    margin: 3px;
+    font-size: 12px;
+  }
+
+  /* SECTION */
+  .section {
+    margin: 12px;
+    padding: 12px;
+    border-radius: 14px;
+    background: #f9fafb;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    margin-bottom: 10px;
+    font-size: 15px;
+  }
+
+  .section-header button {
+    border: none;
+    border-radius: 10px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 12px;
+    background: #58cc02;
+    color: white;
+  }
+
+  /* TASK */
+  .task {
+    background: white;
+    border-radius: 12px;
+    padding: 10px;
+    margin: 8px 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    cursor: grab;
+  }
+
+  /* ONE ROW LAYOUT */
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .text {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  /* STARS */
+  .stars span {
+    font-size: 18px;
+    cursor: pointer;
+    color: #ddd;
+  }
+
+  .stars span.active {
+    color: #ffb300;
+  }
+
+  /* BUTTONS */
+  .btn {
+    border: none;
+    border-radius: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    color: white;
+  }
+
+  .reset { background: #ff7043; }
+  .delete { background: #424242; }
+
+  /* DROP */
+  .section.dragover {
+    outline: 2px dashed #58cc02;
+    background: #eaffea;
+  }
+
+  /* SMALL TEXT */
+  .stats {
+    padding: 10px;
+    font-size: 13px;
+    color: #444;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <div class="header">
+    📘 Mathe Lern App
+    <div class="progress">
+      <div class="progress-fill" id="bar"></div>
+    </div>
+  </div>
+
+  <div class="badges" id="badges"></div>
+  <div class="stats" id="stats"></div>
+  <div class="stats" id="recommendation"></div>
+
+  <div id="app"></div>
+
+</div>
+
+<script>
+
+let sections = {
+  numbers: "Zahlen & Rechnen",
+  fractions: "Brüche & Dezimalzahlen",
+  geometry: "Geometrie",
+  custom: "Eigene Punkte"
+};
+
+let tasks = [];
+
+/* INIT */
+function init() {
+  const saved = localStorage.getItem("tasks");
+  if (saved) tasks = JSON.parse(saved);
+  else {
+    tasks = [
+      ...make("numbers", ["Grundrechenarten","Schriftliches Rechnen"]),
+      ...make("fractions", ["Brüche verstehen","Brüche addieren"]),
+      ...make("geometry", ["Flächen berechnen","Quader"])
+    ];
+  }
+
+  render();
+}
+
+function make(section, list) {
+  return list.map(t => ({
+    id: crypto.randomUUID(),
+    text: t,
+    rating: 0,
+    section
+  }));
+}
+
+/* SAVE */
+function save() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+/* STAR */
+function rate(id, val) {
+  tasks = tasks.map(t =>
+    t.id === id ? { ...t, rating: val } : t
+  );
+  save();
+  render();
+}
+
+/* RESET */
+function reset(id) {
+  tasks = tasks.map(t =>
+    t.id === id ? { ...t, rating: 0 } : t
+  );
+  save();
+  render();
+}
+
+/* DELETE */
+function del(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  save();
+  render();
+}
+
+/* DRAG */
+function dragStart(e, id) {
+  e.dataTransfer.setData("id", id);
+}
+
+function drop(e, sec) {
+  e.preventDefault();
+  const id = e.dataTransfer.getData("id");
+
+  tasks = tasks.map(t =>
+    t.id === id ? { ...t, section: sec } : t
+  );
+
+  save();
+  render();
+}
+
+function allowDrop(e) {
+  e.preventDefault();
+}
+
+/* RENDER */
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+
+  for (let key of Object.keys(sections)) {
+
+    const box = document.createElement("div");
+    box.className = "section";
+
+    box.ondrop = (e) => drop(e, key);
+    box.ondragover = allowDrop;
+
+    box.innerHTML = `
+      <div class="section-header">
+        <span>${sections[key]}</span>
+        <button onclick="add('${key}')">➕</button>
+      </div>
+    `;
+
+    tasks.filter(t => t.section === key).forEach(t => {
+
+      const card = document.createElement("div");
+      card.className = "task";
+      card.draggable = true;
+      card.ondragstart = (e) => dragStart(e, t.id);
+
+      const stars = document.createElement("div");
+      stars.className = "stars";
+
+      for (let i = 1; i <= 5; i++) {
+        const s = document.createElement("span");
+        s.innerHTML = "★";
+        s.className = i <= t.rating ? "active" : "";
+        s.onclick = () => rate(t.id, i);
+        stars.appendChild(s);
+      }
+
+      const row = document.createElement("div");
+      row.className = "row";
+
+      const text = document.createElement("div");
+      text.className = "text";
+      text.innerText = t.text;
+
+      const resetBtn = document.createElement("button");
+      resetBtn.className = "btn reset";
+      resetBtn.innerText = "↺";
+      resetBtn.onclick = () => reset(t.id);
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "btn delete";
+      delBtn.innerText = "🗑";
+      delBtn.onclick = () => del(t.id);
+
+      row.appendChild(text);
+      row.appendChild(stars);
+      row.appendChild(resetBtn);
+      row.appendChild(delBtn);
+
+      card.appendChild(row);
+      box.appendChild(card);
+    });
+
+    app.appendChild(box);
+  }
+
+  update();
+}
+
+/* ADD */
+function add(sec) {
+  const text = prompt("Neuer Lernpunkt:");
+  if (!text) return;
+
+  tasks.push({
+    id: crypto.randomUUID(),
+    text,
+    rating: 0,
+    section: sec
+  });
+
+  save();
+  render();
+}
+
+/* UPDATE UI */
+function update() {
+  const total = tasks.length * 5;
+  const done = tasks.reduce((s,t)=>s+t.rating,0);
+
+  document.getElementById("bar").style.width =
+    (done / total) * 100 + "%";
+
+  let rated = tasks.filter(t => t.rating > 0).length;
+
+  let b = [];
+  if (rated >= 1) b.push("🌱 Starter");
+  if (rated >= 10) b.push("📘 Aktiv");
+  if (rated >= 20) b.push("🔥 Pro");
+
+  document.getElementById("badges").innerHTML =
+    b.map(x => `<span class="badge">${x}</span>`).join("");
+
+  document.getElementById("stats").innerHTML =
+    "📊 Aufgaben: " + tasks.length;
+
+  document.getElementById("recommendation").innerHTML =
+    rated < 5 ? "🧠 Starte mit Üben!" : "🔥 Weiter so!";
+}
+
+init();
+
+</script>
+
+</body>
+</html>
