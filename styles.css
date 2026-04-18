@@ -1,0 +1,67 @@
+body {
+  margin: 0;
+  font-family: system-ui, Arial;
+  background: #eef2ff;
+}
+
+.app {
+  max-width: 900px;
+  margin: auto;
+  background: white;
+  min-height: 100vh;
+}
+
+.header {
+  background: linear-gradient(135deg, #58cc02, #43a047);
+  color: white;
+  padding: 20px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.stats {
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.bar {
+  height: 8px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.fill {
+  height: 100%;
+  width: 0%;
+  background: white;
+}
+
+.section {
+  margin: 15px;
+  background: #f9fafb;
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.task {
+  background: white;
+  margin: 8px 0;
+  padding: 10px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.stars span {
+  cursor: pointer;
+  color: #ddd;
+  font-size: 18px;
+}
+
+.stars .active {
+  color: #ffb300;
+}
